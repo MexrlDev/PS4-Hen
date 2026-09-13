@@ -1,7 +1,7 @@
-# PS4HEN v2.2.0 BETA
+# PS4HEN v2.2.1 BETA
 
 ## Features
-- Current Supports 5.05 - 12.02
+- Current Supports 5.05 - 13.00
 - Homebrew Enabler
 - Plugins System
   - Plugins are bundled into HEN, the `hen.bin` in this repository has plugins as of [latest](https://github.com/Scene-Collective/ps4-hen-plugins/releases/latest) tag.
