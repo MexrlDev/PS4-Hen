@@ -3,9 +3,13 @@ name: Build PS4 HEN (ELF & BIN)
 on:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     steps:
       - name: Checkout repository
@@ -16,7 +20,6 @@ jobs:
           cat > _build_hen.sh <<'SCRIPT'
           #!/bin/bash
           echo "== Working dir: $(pwd) =="
-          export MAKEFLAGS="RM=true"
           if [ -f installer/Makefile ]; then
             sed -i 's|@rm -f temp.t|@true|g' installer/Makefile || true
             sed -i 's|rm -f temp.t|true|g' installer/Makefile || true
@@ -29,7 +32,6 @@ jobs:
           find . -maxdepth 4 \( -name 'temp.t' -o -name '*.elf' -o -name '*.bin' \) -not -path './.git/*' 2>/dev/null
           cp installer/temp.t hen.elf 2>/dev/null || true
           cp installer/installer.bin hen.bin 2>/dev/null || true
-          [ -f hen.elf ] || find . -maxdepth 4 -name 'temp.t' -exec cp {} hen.elf \; -quit
           echo "== final =="
           ls -la hen.elf hen.bin || true
           SCRIPT
@@ -40,6 +42,11 @@ jobs:
         with:
           app_path: .
           build_command: bash _build_hen.sh
+
+      - name: Verify build outputs
+        run: |
+          test -s hen.bin || { echo "hen.bin is missing or empty"; exit 1; }
+          test -s hen.elf || { echo "hen.elf is missing or empty"; exit 1; }
 
       - name: Upload BIN
         uses: actions/upload-artifact@v4
