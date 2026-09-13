@@ -34,7 +34,7 @@ fi
 if [ "$SKIP_DOWNLOAD" = false ]; then
   f="plugins.zip"
   rm -f $f
-  curl -fLJO https://github.com/Scene-Collective/ps4-hen-plugins/releases/latest/download/$f
+  curl -fLJO https://github.com/MexrlDev/PS4-Hen-Plugins/releases/latest/download/$f
   unzip $f
 fi
 
