@@ -196,12 +196,12 @@ int _main(struct thread *td) {
 
   // Create temp file to prevent re-running HEN
   touch_file(IS_INSTALLED_PATH);
-  printf_notification("Welcome to HEN %s", VERSION);
+  printf_notification("Welcome to %s %s\nFW %u.%02u", HEN_NAME, VERSION, fw_version / 100, fw_version % 100);
 
   const char *proc = kill_ui ? "SceShellUI" : NULL;
   if (kill_ui) {
     usleep(sleep_sec * u_to_sec);
-    printf_notification("HEN will restart %s\nin %d seconds...", proc, sleep_sec);
+    printf_notification("%s will restart %s in %d seconds", HEN_NAME, proc, sleep_sec);
     usleep(sleep_sec * u_to_sec);
   }
 
