@@ -3,6 +3,7 @@
 ## Features
 - Current Supports 5.05 - 13.00
 - Resets SceShellUl **(pls don’t worry it takes around 1 min or 2 maybe even less than 1 min to reset. your screen will be black for few seconds maybe a min or two. let it take its time <3)**
+- Shows Ver+FW in the notify
 - Homebrew Enabler
 - Plugins System
   - Plugins are bundled into HEN, the `hen.bin` in this repository has plugins as of [latest](https://github.com/Scene-Collective/ps4-hen-plugins/releases/latest) tag.
