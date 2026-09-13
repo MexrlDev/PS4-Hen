@@ -1,0 +1,56 @@
+name: Build PS4 HEN (ELF & BIN)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Prepare in-container build script
+        run: |
+          cat > _build_hen.sh <<'SCRIPT'
+          #!/bin/bash
+          echo "== Working dir: $(pwd) =="
+          export MAKEFLAGS="RM=true"
+          if [ -f installer/Makefile ]; then
+            sed -i 's|@rm -f temp.t|@true|g' installer/Makefile || true
+            sed -i 's|rm -f temp.t|true|g' installer/Makefile || true
+          fi
+          echo "== Running build.sh =="
+          bash build.sh || echo "build.sh exited $? (continuing)"
+          echo "== installer/ listing =="
+          ls -la installer/ || true
+          echo "== searching for temp.t / *.elf / *.bin =="
+          find . -maxdepth 4 \( -name 'temp.t' -o -name '*.elf' -o -name '*.bin' \) -not -path './.git/*' 2>/dev/null
+          cp installer/temp.t hen.elf 2>/dev/null || true
+          cp installer/installer.bin hen.bin 2>/dev/null || true
+          [ -f hen.elf ] || find . -maxdepth 4 -name 'temp.t' -exec cp {} hen.elf \; -quit
+          echo "== final =="
+          ls -la hen.elf hen.bin || true
+          SCRIPT
+          chmod +x _build_hen.sh
+
+      - name: Build with PS4 Payload SDK
+        uses: Scene-Collective/ps4-payload-sdk@main
+        with:
+          app_path: .
+          build_command: bash _build_hen.sh
+
+      - name: Upload BIN
+        uses: actions/upload-artifact@v4
+        with:
+          name: hen-bin
+          path: hen.bin
+          if-no-files-found: error
+
+      - name: Upload ELF
+        uses: actions/upload-artifact@v4
+        with:
+          name: hen-elf
+          path: hen.elf
+          if-no-files-found: error
