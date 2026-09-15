@@ -6,8 +6,8 @@
 - Shows Ver+FW in the notify
 - Homebrew Enabler
 - Plugins System
-  - Plugins are bundled into HEN, the `hen.bin` in this repository has plugins as of [latest](https://github.com/Scene-Collective/ps4-hen-plugins/releases/latest) tag.
-  - More info at [ps4-hen-plugins](https://github.com/Scene-Collective/ps4-hen-plugins) page.
+  - Plugins are bundled into HEN, the `hen.bin` in this repository has plugins as of [latest](https://github.com/MexrlDev/PS4-Hen-Plugins/releases/latest) tag.
+  - More info at [ps4-hen-plugins](https://github.com/MexrlDev/PS4-Hen-Plugins) page.
 - Jailbreak
 - Sandbox Escape
 - Debug Settings
