@@ -2,7 +2,7 @@
 
 ## Features
 - Current Supports 5.05 - 13.00
-- Resets SceShellUl **(pls don’t worry it takes around 1 min or 2 maybe even less than 1 min to reset. your screen will be black for few seconds maybe a min or two. let it take its time <3)**
+- Resets SceShellUl **(screen will turn black, it will take around 24 seconds, DO NOT PANIC.)**
 - Shows Ver+FW in the notify
 - Homebrew Enabler
 - Plugins System
