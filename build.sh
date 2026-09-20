@@ -19,13 +19,14 @@ pushd tmp > /dev/null
 # known bundled plugins
 PRX_FILES="plugin_bootloader.prx plugin_loader.prx plugin_mono.prx plugin_server.prx plugin_shellcore.prx"
 
-SKIP_DOWNLOAD=false
-if [ -f plugins.zip ]; then
-  SKIP_DOWNLOAD=true
-else
+# Only skip the download if EVERY expected PRX is already present.
+# The previous version skipped if ANY file existed, which is how partial
+# extracts ended up in the build tree.
+SKIP_DOWNLOAD=true
+if [ ! -f plugins.zip ]; then
   for prx in "${PRX_FILES[@]}"; do
-    if [ -f "$prx" ]; then
-      SKIP_DOWNLOAD=true
+    if [ ! -f "$prx" ]; then
+      SKIP_DOWNLOAD=false
       break
     fi
   done
@@ -34,8 +35,15 @@ fi
 if [ "$SKIP_DOWNLOAD" = false ]; then
   f="plugins.zip"
   rm -f $f
+  rm -f plugin_bootloader.prx plugin_loader.prx plugin_mono.prx \
+        plugin_server.prx plugin_shellcore.prx
   curl -fLJO https://github.com/MexrlDev/PS4-Hen-Plugins/releases/latest/download/$f
-  unzip $f
+  unzip -o $f
+fi
+
+# Sanity check: warn if plugin_server is missing so it's obvious in CI logs
+if [ ! -f plugin_server.prx ]; then
+  echo "::warning::plugin_server.prx not found in plugins.zip; FTP/klog will be unavailable."
 fi
 
 # need to use translation units to force rebuilds
