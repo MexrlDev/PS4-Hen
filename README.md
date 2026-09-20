@@ -1,4 +1,4 @@
-# PurpyHen v3.0.0 BETA
+# PurpyHen v3.0.0
 
 ## Features
 - Current Supports 5.05 - 13.00
