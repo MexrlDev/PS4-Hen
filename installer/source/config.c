@@ -6,16 +6,14 @@
 
 #include "config.h"
 
-#define DEFAULT_EXPLOIT_FIXES     1
-#define DEFAULT_MMAP_PATCHES      1
-#define DEFAULT_BLOCK_UPDATES     1
-#define DEFAULT_DISABLE_ASLR      1
-#define DEFAULT_NOBD_PATCHES      0
-#define DEFAULT_SKIP_PATCHES      0
-#define DEFAULT_UPLOAD_PRX        1
-#define DEFAULT_ENABLE_PLUGINS    1
-#define DEFAULT_SHOW_NETWORK_INFO 0
-#define DEFAULT_SHOW_TITLE_ID     1
+#define DEFAULT_EXPLOIT_FIXES 1
+#define DEFAULT_MMAP_PATCHES 1
+#define DEFAULT_BLOCK_UPDATES 1
+#define DEFAULT_DISABLE_ASLR 1
+#define DEFAULT_NOBD_PATCHES 0
+#define DEFAULT_SKIP_PATCHES 0
+#define DEFAULT_UPLOAD_PRX 1
+#define DEFAULT_ENABLE_PLUGINS 1
 
 #include "hen.ini.inc.c"
 
@@ -29,21 +27,21 @@ static void upload_ver(void) {
   write_blob(BASE_PATH "/" VERSION_TXT, VERSION, sizeof(VERSION) - 1);
 }
 
+// Helper function to set all configuration values to their defaults
 static void set_config_defaults(struct configuration *config) {
   memset(config, '\0', sizeof(*config));
-  config->config_version   = DEFAULT_CONFIG_VERSION;
-  config->exploit_fixes    = DEFAULT_EXPLOIT_FIXES;
-  config->mmap_patches     = DEFAULT_MMAP_PATCHES;
-  config->block_updates    = DEFAULT_BLOCK_UPDATES;
-  config->disable_aslr     = DEFAULT_DISABLE_ASLR;
-  config->nobd_patches     = DEFAULT_NOBD_PATCHES;
-  config->skip_patches     = DEFAULT_SKIP_PATCHES;
-  config->upload_prx       = DEFAULT_UPLOAD_PRX;
-  config->enable_plugins   = DEFAULT_ENABLE_PLUGINS;
-  config->show_network_info = DEFAULT_SHOW_NETWORK_INFO;
-  config->show_title_id    = DEFAULT_SHOW_TITLE_ID;
+  config->config_version = DEFAULT_CONFIG_VERSION;
+  config->exploit_fixes = DEFAULT_EXPLOIT_FIXES;
+  config->mmap_patches = DEFAULT_MMAP_PATCHES;
+  config->block_updates = DEFAULT_BLOCK_UPDATES;
+  config->disable_aslr = DEFAULT_DISABLE_ASLR;
+  config->nobd_patches = DEFAULT_NOBD_PATCHES;
+  config->upload_prx = DEFAULT_UPLOAD_PRX;
+  config->enable_plugins = DEFAULT_ENABLE_PLUGINS;
+  // target_id is already zeroed by memset, which means no spoofing
 }
 
+// Helper function to validate and set boolean config values (0, false, 1, or true)
 static int set_bool_config(const char *name, const char *value, int *config_field, int default_value) {
   if (strcmp(value, "0") == 0 || strcasecmp(value, "false") == 0) {
     *config_field = 0;
@@ -52,6 +50,7 @@ static int set_bool_config(const char *name, const char *value, int *config_fiel
     *config_field = 1;
     return 1;
   }
+
   printf_notification("ERROR: Invalid %s:\n    Must be 0 or 1 (false or true)", name);
   *config_field = default_value;
   return 1;
@@ -63,6 +62,7 @@ static int set_int_config(const char *name, const char *value, int *config_field
     *config_field = parsed_v;
     return 1;
   }
+
   printf_notification("ERROR: Malformed %s", name);
   *config_field = default_value;
   return 1;
@@ -70,6 +70,8 @@ static int set_int_config(const char *name, const char *value, int *config_field
 
 int found_version = 0;
 
+// The return values are flipped in this function compared to the rest of this
+// file because the INI lib expects it that way
 static int config_handler(void *config, const char *name, const char *value) {
   struct configuration *config_p = (struct configuration *)config;
 
@@ -92,10 +94,6 @@ static int config_handler(void *config, const char *name, const char *value) {
     return set_bool_config("upload_prx", value, &config_p->upload_prx, DEFAULT_UPLOAD_PRX);
   } else if (MATCH("enable_plugins")) {
     return set_bool_config("enable_plugins", value, &config_p->enable_plugins, DEFAULT_ENABLE_PLUGINS);
-  } else if (MATCH("show_network_info")) {
-    return set_bool_config("show_network_info", value, &config_p->show_network_info, DEFAULT_SHOW_NETWORK_INFO);
-  } else if (MATCH("show_title_id")) {
-    return set_bool_config("show_title_id", value, &config_p->show_title_id, DEFAULT_SHOW_TITLE_ID);
   } else if (MATCH("target_id")) {
     if (strlen(value) == 1 && value[0] == '0') {
       memset(config_p->target_id, '\0', sizeof(config_p->target_id));
@@ -125,6 +123,7 @@ static int config_handler(void *config, const char *name, const char *value) {
 }
 
 int init_config(struct configuration *config) {
+  // Create HEN directory, if it doesn't already exist
   if (!dir_exists(BASE_PATH)) {
     mkdir(BASE_PATH, 0777);
   }
@@ -136,6 +135,7 @@ int init_config(struct configuration *config) {
   if (file_exists(USB_INI_PATH)) {
     if (cfg_parse(USB_INI_PATH, config_handler, config) < 0) {
       printf_notification("ERROR: Unable to load `" USB_INI_PATH "`");
+      // Restore defaults in case parsing partially succeeded before failing
       set_config_defaults(config);
     } else {
       if (!file_compare(USB_INI_PATH, HDD_INI_PATH)) {
@@ -147,6 +147,7 @@ int init_config(struct configuration *config) {
   } else if (file_exists(HDD_INI_PATH)) {
     if (cfg_parse(HDD_INI_PATH, config_handler, config) < 0) {
       printf_notification("ERROR: Unable to load `" HDD_INI_PATH "`");
+      // Restore defaults in case parsing partially succeeded before failing
       set_config_defaults(config);
     } else {
       ret = 0;
