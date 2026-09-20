@@ -13,7 +13,9 @@ struct configuration {
   int skip_patches;
   int upload_prx;
   int enable_plugins;
-  char target_id[TARGET_ID_SIZE + 1]; // Add null term
+  int show_network_info; // NEW: 0 = hide IP/klog notify, 1 = show
+  int show_title_id;     // NEW: 0 = hide title IDs in PKG listings, 1 = show
+  char target_id[TARGET_ID_SIZE + 1];
 };
 
 #endif
