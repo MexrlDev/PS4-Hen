@@ -1,63 +1,91 @@
-name: Build PS4 HEN (ELF & BIN)
+#!/bin/bash
+set -e
 
-on:
-  workflow_dispatch:
+# -----------------------------------------------------------------------------
+# PurpyHen plugins build script
+#
+# Builds every plugin_*/ directory, then copies each built PRX up to the repo
+# root so the CI's `7z a plugins.zip *.prx` step picks all of them up.
+#
+# Fails loudly if an expected PRX is missing, so we never publish a partial
+# plugins.zip again (this is what was happening with plugin_server.prx).
+# -----------------------------------------------------------------------------
 
-permissions:
-  contents: read
+# Build int3 codecave (used by plugin_mono's prologue hooks)
+echo "::group::Generating int3 codecave"
+bash int3.sh 4096 > common/cave.inc.c
+echo "::endgroup::"
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
+# Clean repo root of stale PRXs from previous runs
+rm -f ./*.prx
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+# Build every plugin_*/ directory
+for dr in plugin_*/ ; do
+    if [ -d "$dr" ]; then
+        echo "::group::Build $dr"
+        make -C "$dr" clean all
+        echo "::endgroup::"
+    fi
+done
 
-      - name: Prepare in-container build script
-        run: |
-          cat > _build_hen.sh <<'SCRIPT'
-          #!/bin/bash
-          echo "== Working dir: $(pwd) =="
-          if [ -f installer/Makefile ]; then
-            sed -i 's|@rm -f temp.t|@true|g' installer/Makefile || true
-            sed -i 's|rm -f temp.t|true|g' installer/Makefile || true
-          fi
-          echo "== Running build.sh =="
-          bash build.sh || echo "build.sh exited $? (continuing)"
-          echo "== installer/ listing =="
-          ls -la installer/ || true
-          echo "== searching for temp.t / *.elf / *.bin =="
-          find . -maxdepth 4 \( -name 'temp.t' -o -name '*.elf' -o -name '*.bin' \) -not -path './.git/*' 2>/dev/null
-          cp installer/temp.t hen.elf 2>/dev/null || true
-          cp installer/installer.bin hen.bin 2>/dev/null || true
-          echo "== final =="
-          ls -la hen.elf hen.bin || true
-          SCRIPT
-          chmod +x _build_hen.sh
+# -----------------------------------------------------------------------------
+# Copy each plugin's PRX to repo root.
+#
+# Plugin layout is assumed to be:
+#   plugin_<name>/plugin_<name>.prx
+#
+# If a plugin writes its PRX somewhere else, adjust its Makefile — don't
+# special-case it here, otherwise we lose the "one convention" invariant that
+# the sanity check below relies on.
+# -----------------------------------------------------------------------------
+echo "::group::Collecting PRXs"
+for dr in plugin_*/ ; do
+    [ -d "$dr" ] || continue
+    dir="${dr%/}"                       # strip trailing slash
+    prx="${dir}/${dir}.prx"             # e.g. plugin_server/plugin_server.prx
 
-      - name: Build with PS4 Payload SDK
-        uses: Scene-Collective/ps4-payload-sdk@main
-        with:
-          app_path: .
-          build_command: bash _build_hen.sh
+    if [ -f "$prx" ]; then
+        cp -v "$prx" ./
+    else
+        echo "::warning::$prx not found after build; skipping."
+    fi
+done
+echo "::endgroup::"
 
-      - name: Verify build outputs
-        run: |
-          test -s hen.bin || { echo "hen.bin is missing or empty"; exit 1; }
-          test -s hen.elf || { echo "hen.elf is missing or empty"; exit 1; }
+# -----------------------------------------------------------------------------
+# Sanity check: these are the PRXs the HEN runtime actually loads.
+# If any is missing, the corresponding feature won't work on the console,
+# so we abort rather than publish a broken release.
+# -----------------------------------------------------------------------------
+REQUIRED_PRX="plugin_bootloader.prx plugin_loader.prx plugin_mono.prx plugin_server.prx plugin_shellcore.prx"
 
-      - name: Upload BIN
-        uses: actions/upload-artifact@v4
-        with:
-          name: hen-bin
-          path: hen.bin
-          if-no-files-found: error
+missing=""
+for prx in $REQUIRED_PRX; do
+    if [ ! -f "$prx" ]; then
+        missing="$missing $prx"
+    fi
+done
 
-      - name: Upload ELF
-        uses: actions/upload-artifact@v4
-        with:
-          name: hen-elf
-          path: hen.elf
-          if-no-files-found: error
+if [ -n "$missing" ]; then
+    echo "::error::Missing required PRX files:$missing"
+    echo "::error::Each plugin_<name>/ must produce plugin_<name>/plugin_<name>.prx"
+    echo "::error::Check the failing plugin's Makefile — it likely writes to a different name or path."
+    echo
+    echo "--- Repo root .prx files ---"
+    ls -la ./*.prx 2>/dev/null || echo "(none)"
+    echo
+    echo "--- Per-plugin .prx files ---"
+    for dr in plugin_*/ ; do
+        [ -d "$dr" ] || continue
+        echo "$dr:"
+        find "$dr" -maxdepth 2 -name '*.prx' -printf '  %p\n' 2>/dev/null || true
+    done
+    exit 1
+fi
+
+echo
+echo "All required PRXs present:"
+ls -la ./*.prx
+
+echo
+echo "Build complete."
