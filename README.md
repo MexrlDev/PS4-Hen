@@ -1,4 +1,4 @@
-# PS4HEN v2.2.1 BETA
+# PurpyHen v3.0.0 BETA
 
 ## Features
 - Current Supports 5.05 - 13.00
